@@ -1,14 +1,4 @@
 from flask import Flask, request, jsonify
-from analyzer import ComplexityAnalyzer
-
-app = Flask(__name__)
-analyzer = ComplexityAnalyzer()
-
-@app.route("/health", methods=["GET"])
-def health():
-    return jsonify({"status": "ok"}), 200
-
-from flask import Flask, request, jsonify
 import os
 import requests
 from analyzer import PythonComplexityAnalyzer
@@ -38,9 +28,9 @@ def analyze():
                 rec_result = response.json()
                 result["recursive_analysis"] = rec_result
             else:
-                result["recursive_analysis"] = {"error": f"Recursive analyzer returned status {response.status_code}"}
+                result["recursive_analysis"] = f"Recursive analyzer returned status {response.status_code}"
         except Exception as e:
-            result["recursive_analysis"] = {"error": str(e)}
+            result["recursive_analysis"] = str(e)
 
     return jsonify(result), 200
 

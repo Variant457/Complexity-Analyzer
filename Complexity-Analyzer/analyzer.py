@@ -6,6 +6,28 @@ class PythonComplexityAnalyzer:
     Ignores recursion but flags recursive functions.
     """
 
+    ComplexityRanks = {
+        "O(1)": 0,
+        "O(log n)": 1,
+        "O(n)": 2,
+        "O(n log n)": 3,
+        "O(2^n)": 8,
+        "O(n!)": 9,
+        "O(inf)": 10
+    }
+
+    @staticmethod
+    def get_complexity_rank(complexity: str):
+        if "O(n^" in complexity:
+            power = int(complexity.split('^')[-1].replace(")", ""))
+            return 3 + power 
+        
+        if " or " in complexity:
+            parts = complexity.split(" or ")
+            return max(PythonComplexityAnalyzer.get_complexity_rank(p.strip().split(' ')[0]) for p in parts)
+        
+        return PythonComplexityAnalyzer.ComplexityRanks.get(complexity, -1)
+    
     def analyze(self, code: str):
         try:
             tree = ast.parse(code)

@@ -18,13 +18,13 @@ class PythonComplexityAnalyzer:
 
     @staticmethod
     def get_complexity_rank(complexity: str):
-        if "O(n^" in complexity:
-            power = int(complexity.split('^')[-1].replace(")", ""))
-            return 3 + power 
-        
         if " or " in complexity:
             parts = complexity.split(" or ")
             return max(PythonComplexityAnalyzer.get_complexity_rank(p.strip().split(' ')[0]) for p in parts)
+        
+        if "O(n^" in complexity:
+            power = int(complexity.split('^')[-1].replace(")", ""))
+            return 3 + power 
         
         return PythonComplexityAnalyzer.ComplexityRanks.get(complexity, -1)
     

@@ -170,9 +170,9 @@ class RecursiveAnalyzer():
                 return f"O(n^2) or O(n log n)", f"1 call, {work_big_o} work (if work dominates) or n log n (ex: Merge Sort analysis)."
         if calls > 1:
             if work_rank <= work_o1:
-                return f"O({calls}^n) or O(n log n)", f"{calls} recursive calls with constant work per call."
+                return f"O({calls}^n) or O(n^{calls})", f"{calls} recursive calls with constant work per call."
             else:
-                return f"O(n log n) or O(n^k)", f"{calls} recursive calls with {work_big_o} work per call."
+                return f"O(n log n) or O(n^{calls})", f"{calls} recursive calls with {work_big_o} work per call."
             
         return "O(inf)", "Unknown Complexity."
 

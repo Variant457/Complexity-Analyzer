@@ -13,13 +13,13 @@ class RecursiveAnalyzer():
 
     @staticmethod
     def get_complexity_rank(big_o: str):
-        if "O(n^" in big_o:
-            power = int(big_o.split("O(n^")[-1].replace(')', ''))
-            return 3 + power
-        
         if " or " in big_o:
             complexities = big_o.split(" or ")
             return max(RecursiveAnalyzer.get_complexity_rank(p.strip().split(" ")[0]) for p in complexities)
+        
+        if "O(n^" in big_o:
+            power = int(big_o.split('^')[-1].replace(')', ''))
+            return 3 + power
         
         return RecursiveAnalyzer.ComplexityRanks.get(big_o, -1)
     
@@ -46,11 +46,35 @@ class RecursiveAnalyzer():
         return False
     
     def analyze_function(self, func_node: ast.FunctionDef):
-        recursive_calls = 0
-        for node in ast.walk(func_node):
-            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == func_node.name:
-                recursive_calls += 1
+        def count_calls_in_node(node):
+            """Counts recursive calls within a given node."""
+            count = 0
+            for n in ast.walk(node):
+                if isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id == func_node.name:
+                    count += 1
+            return count
 
+        def find_max_calls_in_branch(node_list):
+            """Finds the max calls in any single branch (e.g., if/else)."""
+            max_calls = 0
+            
+            non_branch_nodes = [n for n in node_list if not isinstance(n, ast.If)]
+            for node in non_branch_nodes:
+                max_calls += count_calls_in_node(node)
+
+            if_nodes = [n for n in node_list if isinstance(n, ast.If)]
+            if not if_nodes:
+                return max_calls
+
+            max_branch_calls = 0
+            for if_node in if_nodes:
+                body_calls = find_max_calls_in_branch(if_node.body)
+                orelse_calls = find_max_calls_in_branch(if_node.orelse)
+                max_branch_calls = max(max_branch_calls, body_calls, orelse_calls)
+            
+            return max_calls + max_branch_calls
+        
+        recursive_calls = find_max_calls_in_branch(func_node.body)
         work_per_call, work_rank = self.find_work_per_call(func_node.body)
         has_base_case = self.find_base_case(func_node)
         big_o, explanation = self.estimate_complexity(recursive_calls, work_per_call, work_rank, has_base_case)
@@ -106,22 +130,49 @@ class RecursiveAnalyzer():
                                 break
                         if not is_recurive_return:
                             return True
+
+        all_calls_guarded = True
+        has_recursive_calls = False
+
+        def check_guards(node, is_guarded):
+            nonlocal all_calls_guarded, has_recursive_calls
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == func_node.name:
+                has_recursive_calls = True
+                if not is_guarded:
+                    all_calls_guarded = False
+                return
+
+            new_guard_status = is_guarded
+            if isinstance(node, (ast.If, ast.While, ast.For)):
+                new_guard_status = True
+
+            for child in ast.iter_child_nodes(node):
+                check_guards(child, new_guard_status)
+
+        for body_item in func_node.body:
+            check_guards(body_item, is_guarded=False)
+
+        if has_recursive_calls and all_calls_guarded:
+            return True
+
         return False
     
     def estimate_complexity(self, calls, work_big_o, work_rank, has_base):
         if not has_base:
             return "O(inf)", "No base case found; function may not terminate."
         
+        work_o1 = self.get_complexity_rank("O(1)")
+        
         if calls == 1:
-            if work_rank <= self.get_complexity_rank("O(1)"):
+            if work_rank <= work_o1:
                 return "O(n) or O(log n)", "Single recursive call with constant or logarithmic work per call."
             else:
-                return f"{work_big_o}*log n or {work_big_o}* n", f"1 call, {work_big_o} (if work dominates) or {work_big_o}*log n (ex: Merge Sort analysis)."
+                return f"O(n^2) or O(n log n)", f"1 call, {work_big_o} work (if work dominates) or n log n (ex: Merge Sort analysis)."
         if calls > 1:
-            if work_rank <= self.get_complexity_rank("O(1)"):
-                return f"O(n^{calls}) or O({calls}^n)", f"{calls} recursive calls with constant work per call."
+            if work_rank <= work_o1:
+                return f"O({calls}^n) or O(n log n)", f"{calls} recursive calls with constant work per call."
             else:
-                return f"O(n log n) or O({calls}^n)", f"{calls} recursive calls with {work_big_o} work per call."
+                return f"O(n log n) or O(n^k)", f"{calls} recursive calls with {work_big_o} work per call."
             
         return "O(inf)", "Unknown Complexity."
 

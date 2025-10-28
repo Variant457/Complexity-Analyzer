@@ -1,8 +1,9 @@
 import requests
 import json
+import os
 
 # The main entry point for the application
-ANALYZER_URL = "http://localhost:5000/analyze"
+ANALYZER_URL = os.getenv("ANALYZER_URL", "http://localhost:5000/analyze")
 headers = {"Content-Type": "application/json"}
 
 # --------------------------------------------------------------------

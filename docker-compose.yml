@@ -1,7 +1,7 @@
 version: "3.9"
 services:
   complexity-analyzer:
-    build: ./complexity-analyzer
+    build: ./Complexity-Analyzer
     container_name: complexity-analyzer
     ports:
       - "5000:5000"
@@ -11,16 +11,25 @@ services:
       - recursive-analyzer
 
   recursive-analyzer:
-    build: ./recursive-analyzer
+    build: ./Recursive-Analyzer
     container_name: recursive-analyzer
     ports:
       - "5001:5001"
 
   result-presentation:
-    build: ./result-presentation
+    build: ./Result-Presentation
     container_name: result-presentation
     ports:
       - "5002:5002"
+    depends_on:
+      - complexity-analyzer
+      - recursive-analyzer
+
+  tests:
+    build: ./Tests
+    container_name: test-runner
+    environment:
+      - ANALYZER_URL=http://complexity-analyzer:5000/analyze
     depends_on:
       - complexity-analyzer
       - recursive-analyzer

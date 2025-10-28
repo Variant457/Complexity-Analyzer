@@ -77,7 +77,8 @@ class RecursiveAnalyzer():
         recursive_calls = find_max_calls_in_branch(func_node.body)
         work_per_call, work_rank = self.find_work_per_call(func_node.body)
         has_base_case = self.find_base_case(func_node)
-        big_o, explanation = self.estimate_complexity(recursive_calls, work_per_call, work_rank, has_base_case)
+        reduction_type = self.find_reduction_type(func_node)
+        big_o, explanation = self.estimate_complexity(recursive_calls, work_per_call, work_rank, has_base_case, reduction_type)
 
         return {
             "recursive_call_count": recursive_calls,
@@ -157,7 +158,7 @@ class RecursiveAnalyzer():
 
         return False
     
-    def estimate_complexity(self, calls, work_big_o, work_rank, has_base):
+    def estimate_complexity(self, calls, work_big_o, work_rank, has_base, reduction_type):
         if not has_base:
             return "O(inf)", "No base case found; function may not terminate."
         
@@ -165,16 +166,56 @@ class RecursiveAnalyzer():
         
         if calls == 1:
             if work_rank <= work_o1:
-                return "O(n) or O(log n)", "Single recursive call with constant or logarithmic work per call."
+                if reduction_type == "Decreases multiplicatively.":
+                    return "O(log n)", "1 call with constant work, reducing input size multiplicatively."
+                elif reduction_type == "Decreases by constant.":
+                    return "O(n)", "1 call with constant work, reducing input size by a constant."
+                else:
+                    return "O(n) or O(log n)", "1 call with constant work, reduction type unknown."
             else:
-                return f"O(n^2) or O(n log n)", f"1 call, {work_big_o} work (if work dominates) or n log n (ex: Merge Sort analysis)."
+                if reduction_type == "Decreases multiplicatively.":
+                    return "O(n log n)", f"1 call with {work_big_o} work, reducing input size multiplicatively."
+                elif reduction_type == "Decreases by constant.":
+                    return f"O(n^{work_rank})", f"1 call with {work_big_o} work, reducing input size by a constant."
+                else:
+                    return f"O(n^{work_rank}) or O(n log n)", f"1 call with {work_big_o} work, reduction type unknown."
         if calls > 1:
             if work_rank <= work_o1:
-                return f"O({calls}^n) or O(n^{calls})", f"{calls} recursive calls with constant work per call."
+                if reduction_type == "Decreases multiplicatively.":
+                    return f"O(n^{calls})", f"{calls} recursive calls with constant work per call, reducing input size multiplicatively."
+                elif reduction_type == "Decreases by constant.":
+                    return f"O(2^n)", f"{calls} recursive calls with constant work per call, reducing input size by a constant."
+                else:
+                    return f"O(n^{calls}) or O(2^n)", f"{calls} recursive calls with constant work per call, reduction type unknown."
             else:
-                return f"O(n log n) or O(n^{calls})", f"{calls} recursive calls with {work_big_o} work per call."
+                if reduction_type == "Decreases multiplicatively.":
+                    return f"O(n log n)", f"{calls} recursive calls with {work_big_o} work, reducing input size multiplicatively."
+                elif reduction_type == "Decreases by constant.":
+                    return f"O(2^n)", f"{calls} recursive calls with {work_big_o} work, reducing input size by a constant."
+                else:
+                    return f"O(n log n) or O(2^n)", f"{calls} recursive calls with {work_big_o} work, reduction type unknown."
             
         return "O(inf)", "Unknown Complexity."
+    
+    def find_reduction_type(self, func_node: ast.FunctionDef):
+        if not func_node.args.args:
+            return "No parameters to reduce."
+        
+        param_name = func_node.args.args[0].arg
+
+        for node in ast.walk(func_node):
+            if (isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == func_node.name):
+                if not node.args:
+                    continue
+
+                arg_node = node.args[0]
+                if (isinstance(arg_node, ast.BinOp) and isinstance(arg_node.left, ast.Name) and arg_node.left.id == param_name):
+                    if isinstance(arg_node.op, ast.Sub):
+                        return "Decreases by constant."
+                    elif isinstance(arg_node.op, ast.Div):
+                        return "Decreases multiplicatively."
+                    
+        return "Unknown reduction type."
 
 class RecursiveCallVisitor(ast.NodeVisitor):
     def __init__(self):

@@ -1,6 +1,8 @@
 from flask import Flask, request, jsonify
+from analyzer import RecursiveAnalyzer
 
 app = Flask(__name__)
+analyzer = RecursiveAnalyzer()
 
 def analyze_recursion(code: str):
     ...
@@ -22,7 +24,7 @@ def analyze():
     if not code:
         return jsonify({"error": "Empty code"}), 400
 
-    result = analyze_recursion(code)
+    result = analyzer.analyze(code)
 
     return jsonify(result), 200
 

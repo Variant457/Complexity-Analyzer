@@ -117,7 +117,7 @@ def factorial(n):
 def run_test(name, code):
     """Helper function to send a test case and print the result."""
     print("=" * 70)
-    print(f"🔬 TESTING: {name}")
+    print(f"TESTING: {name}")
     print("-" * 70)
     
     payload = {"code": code}
@@ -138,21 +138,21 @@ def run_test(name, code):
             print("-" * 70)
             
         else:
-            print(f"🔥 ERROR: Server returned status code {response.status_code}")
+            print(f"ERROR: Server returned status code {response.status_code}")
             print(response.text)
             
     except requests.exceptions.ConnectionError:
-        print(f"🔥 FATAL ERROR: Could not connect to {ANALYZER_URL}")
+        print(f"FATAL ERROR: Could not connect to {ANALYZER_URL}")
         print("Please make sure the Docker containers are running.")
         return False
     except Exception as e:
-        print(f"🔥 An unexpected error occurred: {e}")
+        print(f"An unexpected error occurred: {e}")
         
     return True
 
 # --- Run all tests ---
 if __name__ == "__main__":
-    print("🚀 Starting Recursive Complexity Analyzer Test Suite...")
+    print("Starting Recursive Complexity Analyzer Test Suite...")
     all_passed = True
     for name, code in TEST_CASES.items():
         if not run_test(name, code):
@@ -160,6 +160,6 @@ if __name__ == "__main__":
             break
             
     if all_passed:
-        print("\n✅ Test suite finished.")
+        print("\nTest suite finished.")
     else:
-        print("\n❌ Test suite failed to run.")
+        print("\nTest suite failed to run.")

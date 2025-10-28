@@ -13,8 +13,8 @@ class RecursiveAnalyzer():
 
     @staticmethod
     def get_complexity_rank(big_o: str):
-        if "O(n^ " in big_o:
-            power = int(big_o.split("O(n^ ")[-1].replace(')', ''))
+        if "O(n^" in big_o:
+            power = int(big_o.split("O(n^")[-1].replace(')', ''))
             return 3 + power
         
         if " or " in big_o:
@@ -99,12 +99,13 @@ class RecursiveAnalyzer():
                 for body_item in node.body + node.orelse:
                     if isinstance(body_item, ast.Return):
                         is_recurive_return = False
+
                         for call in ast.walk(body_item):
                             if isinstance(call, ast.Call) and isinstance(call.func, ast.Name) and call.func.id == func_node.name:
                                 is_recurive_return = True
                                 break
-                            if not is_recurive_return:
-                                return True
+                        if not is_recurive_return:
+                            return True
         return False
     
     def estimate_complexity(self, calls, work_big_o, work_rank, has_base):
